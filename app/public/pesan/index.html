@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Pesan — Order Kuliner</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #f6f4ef; color: #222; padding-bottom: 96px; }
+  header { background: #b3231b; color: #fff; padding: 18px 16px 14px; position: sticky; top: 0; z-index: 5; }
+  header h1 { font-size: 20px; }
+  header .sub { opacity: .85; font-size: 13px; margin-top: 2px; }
+  .badge { display: inline-block; background: #fff; color: #b3231b; border-radius: 999px; padding: 2px 10px; font-weight: 700; font-size: 12px; margin-left: 6px; }
+  .cats { display: flex; gap: 8px; overflow-x: auto; padding: 12px 16px 4px; }
+  .cats button { border: 1px solid #ddd; background: #fff; border-radius: 999px; padding: 6px 14px; font-size: 13px; white-space: nowrap; cursor: pointer; }
+  .cats button.aktif { background: #b3231b; color: #fff; border-color: #b3231b; }
+  .menu { padding: 8px 16px; display: grid; gap: 10px; }
+  .item { background: #fff; border-radius: 14px; padding: 12px; display: flex; gap: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  .item img { width: 72px; height: 72px; object-fit: cover; border-radius: 10px; flex: none; }
+  .item .isi { flex: 1; min-width: 0; }
+  .item h3 { font-size: 15px; }
+  .item p { font-size: 12px; color: #777; margin: 3px 0 6px; }
+  .harga { font-weight: 700; color: #b3231b; font-size: 14px; }
+  .tambah { align-self: flex-end; background: #b3231b; color: #fff; border: 0; border-radius: 999px; padding: 7px 16px; font-weight: 700; cursor: pointer; flex: none; }
+  #cartbar { position: fixed; left: 12px; right: 12px; bottom: 12px; background: #222; color: #fff; border-radius: 14px; padding: 14px 16px; display: none; justify-content: space-between; align-items: center; z-index: 6; cursor: pointer; box-shadow: 0 6px 18px rgba(0,0,0,.25); }
+  #cartbar b { font-size: 15px; }
+  .sheet { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: none; z-index: 10; }
+  .sheet .box { position: absolute; left: 0; right: 0; bottom: 0; background: #fff; border-radius: 18px 18px 0 0; padding: 18px; max-height: 86vh; overflow-y: auto; }
+  .sheet h2 { font-size: 17px; margin-bottom: 4px; }
+  .sheet .tutup { float: right; background: #eee; border: 0; border-radius: 999px; width: 30px; height: 30px; cursor: pointer; }
+  label.kecil { font-size: 12px; color: #666; display: block; margin: 14px 0 6px; font-weight: 600; }
+  .opsi { display: flex; flex-wrap: wrap; gap: 8px; }
+  .opsi button, .opsi label { border: 1px solid #ddd; border-radius: 999px; padding: 6px 12px; font-size: 13px; cursor: pointer; background: #fff; }
+  .opsi button.aktif { background: #b3231b; color: #fff; border-color: #b3231b; }
+  .opsi label input { margin-right: 6px; }
+  .qtyrow { display: flex; align-items: center; gap: 14px; margin-top: 6px; }
+  .qtyrow button { width: 36px; height: 36px; border-radius: 50%; border: 1px solid #ddd; background: #fff; font-size: 18px; cursor: pointer; }
+  .qtyrow b { font-size: 17px; min-width: 22px; text-align: center; }
+  textarea, input[type=text] { width: 100%; border: 1px solid #ddd; border-radius: 10px; padding: 10px; font-size: 14px; font-family: inherit; }
+  .btn-besar { width: 100%; background: #b3231b; color: #fff; border: 0; border-radius: 12px; padding: 14px; font-size: 15px; font-weight: 700; margin-top: 16px; cursor: pointer; }
+  .btn-besar:disabled { opacity: .5; }
+  .baris-cart { display: flex; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px dashed #e5e5e5; }
+  .baris-cart .nm { font-size: 14px; font-weight: 600; }
+  .baris-cart .dt { font-size: 12px; color: #777; }
+  .baris-cart .ctl { display: flex; align-items: center; gap: 8px; }
+  .baris-cart .ctl button { width: 26px; height: 26px; border-radius: 50%; border: 1px solid #ddd; background: #fff; cursor: pointer; }
+  #statusView { padding: 28px 20px; text-align: center; display: none; }
+  #statusView img.qr { width: 240px; height: 240px; border-radius: 12px; background: #fff; padding: 8px; }
+  .antrian-besar { font-size: 64px; font-weight: 800; color: #b3231b; line-height: 1; margin: 10px 0; }
+  .siap { background: #e7f8ec; border: 2px solid #22a355; border-radius: 16px; padding: 18px; }
+  .muted { color: #777; font-size: 13px; }
+  #err { margin: 16px; background: #fdecec; color: #8f1d17; padding: 12px 14px; border-radius: 10px; display: none; font-size: 14px; }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="namaUsaha">Memuat…</h1>
+  <div class="sub">Pesan &amp; bayar dari meja — tanpa antri kasir <span class="badge" id="badgeMeja" style="display:none"></span></div>
+</header>
+
+<div id="err"></div>
+
+<main id="menuView">
+  <div class="cats" id="cats"></div>
+  <div class="menu" id="menu"></div>
+</main>
+
+<section id="statusView"></section>
+
+<div id="cartbar"><span id="cartInfo"></span><b id="cartTotal"></b></div>
+
+<!-- Sheet opsi item -->
+<div class="sheet" id="sheetOpsi">
+  <div class="box">
+    <button class="tutup" data-tutup="sheetOpsi">✕</button>
+    <h2 id="opsiNama"></h2>
+    <div class="harga" id="opsiHarga"></div>
+    <div id="opsiLevelWrap">
+      <label class="kecil">LEVEL PEDAS</label>
+      <div class="opsi" id="opsiLevel"></div>
+    </div>
+    <div id="opsiEkstraWrap">
+      <label class="kecil">TAMBAHAN</label>
+      <div class="opsi" id="opsiEkstra" style="flex-direction:column;align-items:flex-start"></div>
+    </div>
+    <label class="kecil">CATATAN (opsional)</label>
+    <textarea id="opsiCatatan" rows="2" placeholder="cth: tidak pakai bawang"></textarea>
+    <label class="kecil">JUMLAH</label>
+    <div class="qtyrow">
+      <button id="qMinus">−</button><b id="qVal">1</b><button id="qPlus">+</button>
+    </div>
+    <button class="btn-besar" id="btnMasuk">Masukkan Keranjang</button>
+  </div>
+</div>
+
+<!-- Sheet keranjang -->
+<div class="sheet" id="sheetCart">
+  <div class="box">
+    <button class="tutup" data-tutup="sheetCart">✕</button>
+    <h2>Keranjang</h2>
+    <div id="isiCart"></div>
+    <label class="kecil">NAMA KAMU (untuk dipanggil saat pesanan siap)</label>
+    <input type="text" id="namaPelanggan" placeholder="cth: Budi">
+    <button class="btn-besar" id="btnBayar">Pesan &amp; Bayar QRIS</button>
+    <p class="muted" style="margin-top:10px">QRIS aktif ±10 menit. Pesanan diteruskan ke dapur setelah pembayaran terkonfirmasi.</p>
+  </div>
+</div>
+
+<script>
+const qs = new URLSearchParams(location.search);
+const TENANT = qs.get('t') || 'warung-demo';
+const MEJA = qs.get('meja') || '';
+const rp = (n) => 'Rp ' + Number(n || 0).toLocaleString('id-ID');
+let MENU = [];
+let cart = []; // {key, menu_id, nama, harga_satuan, qty, level, ekstra:[{nama,harga}], catatan, basis}
+let current = null; // item yang sedang diatur opsinya
+let pollTimer = null;
+
+function tampilError(msg) {
+  const e = document.getElementById('err');
+  e.textContent = msg; e.style.display = 'block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function muatMenu() {
+  try {
+    const u = '/api/pesan?tenant=' + encodeURIComponent(TENANT) + (MEJA ? '&meja=' + encodeURIComponent(MEJA) : '');
+    const r = await fetch(u);
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || 'Gagal memuat menu');
+    document.getElementById('namaUsaha').textContent = d.tenant.nama;
+    document.title = d.tenant.nama + ' — Pesan';
+    if (d.meja) {
+      const b = document.getElementById('badgeMeja');
+      b.textContent = 'Meja ' + d.meja.nomor; b.style.display = 'inline-block';
+    }
+    MENU = d.menu || [];
+    gambarKategori('Semua');
+    gambarMenu('Semua');
+  } catch (e) { tampilError(e.message); }
+}
+
+function gambarKategori(aktif) {
+  const kats = ['Semua', ...new Set(MENU.map((m) => m.kategori || 'Menu'))];
+  document.getElementById('cats').innerHTML = kats.map((k) =>
+    `<button class="${k === aktif ? 'aktif' : ''}" onclick="pilihKategori('${k.replace(/'/g, "\\'")}')">${k}</button>`).join('');
+}
+function pilihKategori(k) { gambarKategori(k); gambarMenu(k); }
+
+function gambarMenu(kat) {
+  const list = MENU.filter((m) => kat === 'Semua' || (m.kategori || 'Menu') === kat);
+  document.getElementById('menu').innerHTML = list.map((m) => `
+    <div class="item">
+      ${m.foto_url ? `<img src="${m.foto_url}" alt="">` : ''}
+      <div class="isi">
+        <h3>${m.nama}</h3>
+        ${m.deskripsi ? `<p>${m.deskripsi}</p>` : ''}
+        <span class="harga">${rp(m.harga)}</span>
+      </div>
+      <button class="tambah" onclick="bukaOpsi('${m.id}')">Tambah</button>
+    </div>`).join('') || '<p class="muted" style="padding:12px">Menu belum tersedia.</p>';
+}
+
+// ---------- Opsi item ----------
+function bukaOpsi(id) {
+  const m = MENU.find((x) => x.id === id);
+  if (!m) return;
+  current = { menu: m, qty: 1, level: 0, ekstra: new Set(), catatan: '' };
+  document.getElementById('opsiNama').textContent = m.nama;
+  document.getElementById('opsiHarga').textContent = rp(m.harga);
+  document.getElementById('opsiLevelWrap').style.display = m.ada_level ? 'block' : 'none';
+  document.getElementById('opsiLevel').innerHTML = [0,1,2,3,4,5].map((l) =>
+    `<button data-level="${l}" class="${l === 0 ? 'aktif' : ''}" onclick="pilihLevel(${l})">Level ${l}</button>`).join('');
+  const eks = Array.isArray(m.ekstra) ? m.ekstra : [];
+  document.getElementById('opsiEkstraWrap').style.display = eks.length ? 'block' : 'none';
+  document.getElementById('opsiEkstra').innerHTML = eks.map((e) =>
+    `<label><input type="checkbox" value="${e.nama.replace(/"/g, '&quot;')}" onchange="toggleEkstra(this)">${e.nama} (+${rp(e.harga)})</label>`).join('');
+  document.getElementById('opsiCatatan').value = '';
+  document.getElementById('qVal').textContent = '1';
+  bukaSheet('sheetOpsi');
+}
+function pilihLevel(l) {
+  current.level = l;
+  document.querySelectorAll('#opsiLevel button').forEach((b) => b.classList.toggle('aktif', Number(b.dataset.level) === l));
+}
+function toggleEkstra(cb) {
+  if (cb.checked) current.ekstra.add(cb.value); else current.ekstra.delete(cb.value);
+}
+document.getElementById('qMinus').onclick = () => { if (current.qty > 1) current.qty--; document.getElementById('qVal').textContent = current.qty; };
+document.getElementById('qPlus').onclick = () => { if (current.qty < 50) current.qty++; document.getElementById('qVal').textContent = current.qty; };
+document.getElementById('btnMasuk').onclick = () => {
+  const m = current.menu;
+  const ekstraArr = (Array.isArray(m.ekstra) ? m.ekstra : []).filter((e) => current.ekstra.has(e.nama));
+  const hargaSatuan = Number(m.harga) + ekstraArr.reduce((s, e) => s + Number(e.harga || 0), 0);
+  const catatan = document.getElementById('opsiCatatan').value.trim();
+  const level = m.ada_level ? current.level : null;
+  const key = [m.id, level === null ? '-' : level, ekstraArr.map((e) => e.nama).sort().join('+'), catatan].join('|');
+  const ada = cart.find((c) => c.key === key);
+  if (ada) ada.qty = Math.min(50, ada.qty + current.qty);
+  else cart.push({ key, menu_id: m.id, nama: m.nama, harga_satuan, qty: current.qty, level, ekstra: ekstraArr, catatan });
+  tutupSheet('sheetOpsi');
+  gambarCartBar();
+};
+
+// ---------- Keranjang ----------
+function totalCart() { return cart.reduce((s, c) => s + c.harga_satuan * c.qty, 0); }
+function gambarCartBar() {
+  const bar = document.getElementById('cartbar');
+  if (!cart.length) { bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  document.getElementById('cartInfo').textContent = cart.reduce((s, c) => s + c.qty, 0) + ' item';
+  document.getElementById('cartTotal').textContent = rp(totalCart());
+}
+document.getElementById('cartbar').onclick = () => { gambarIsiCart(); bukaSheet('sheetCart'); };
+function gambarIsiCart() {
+  document.getElementById('isiCart').innerHTML = cart.map((c, i) => `
+    <div class="baris-cart">
+      <div>
+        <div class="nm">${c.nama} × ${c.qty}</div>
+        <div class="dt">${c.level !== null ? 'Level ' + c.level + ' · ' : ''}${c.ekstra.map((e) => e.nama).join(', ')}${c.catatan ? ' · ' + c.catatan : ''}</div>
+      </div>
+      <div>
+        <div style="font-weight:700;text-align:right">${rp(c.harga_satuan * c.qty)}</div>
+        <div class="ctl" style="justify-content:flex-end;margin-top:4px">
+          <button onclick="ubahQty(${i},-1)">−</button><b>${c.qty}</b><button onclick="ubahQty(${i},1)">+</button>
+        </div>
+      </div>
+    </div>`).join('') + `<div style="text-align:right;font-weight:800;padding-top:10px">Total: ${rp(totalCart())}</div>`;
+}
+function ubahQty(i, d) {
+  cart[i].qty += d;
+  if (cart[i].qty <= 0) cart.splice(i, 1);
+  gambarIsiCart(); gambarCartBar();
+  if (!cart.length) tutupSheet('sheetCart');
+}
+
+// ---------- Checkout & status ----------
+document.getElementById('btnBayar').onclick = async () => {
+  const btn = document.getElementById('btnBayar');
+  btn.disabled = true; btn.textContent = 'Membuat QRIS…';
+  try {
+    const body = {
+      tenant: TENANT, meja_token: MEJA,
+      nama: document.getElementById('namaPelanggan').value.trim(),
+      items: cart.map((c) => ({ menu_id: c.menu_id, qty: c.qty, level: c.level, ekstra: c.ekstra.map((e) => e.nama), catatan: c.catatan })),
+    };
+    const r = await fetch('/api/pesan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || 'Gagal membuat pesanan');
+    sessionStorage.setItem('ok_order', JSON.stringify({ order_id: d.order_id, tenant: TENANT }));
+    cart = []; gambarCartBar(); tutupSheet('sheetCart');
+    mulaiLacak(d.order_id, d.qr_image_url);
+  } catch (e) { tampilError(e.message); }
+  btn.disabled = false; btn.textContent = 'Pesan & Bayar QRIS';
+};
+
+function bunyi(n) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    for (let i = 0; i < (n || 1); i++) {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value = 880; g.gain.value = 0.15;
+      const t = ctx.currentTime + i * 0.35;
+      o.start(t); o.stop(t + 0.22);
+    }
+  } catch {}
+}
+
+function mulaiLacak(orderId, qrUrl) {
+  document.getElementById('menuView').style.display = 'none';
+  document.getElementById('cartbar').style.display = 'none';
+  const v = document.getElementById('statusView');
+  v.style.display = 'block';
+  let statusTerakhir = '';
+  const gambarStatus = (d) => {
+    if (d.status !== statusTerakhir) {
+      statusTerakhir = d.status;
+      if (d.status === 'siap') { bunyi(3); if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]); }
+      if (d.status === 'dibayar') bunyi(1);
+    }
+    if (d.status === 'menunggu_bayar') {
+      v.innerHTML = `<p class="muted">Nomor antrian kamu</p><div class="antrian-besar">${d.nomor_antrian}</div>
+        <p>Scan QRIS di bawah untuk membayar <b>${rp(d.total)}</b></p>
+        ${qrUrl || d.qr_image_url ? `<img class="qr" src="${qrUrl || d.qr_image_url}" alt="QRIS">` : ''}
+        <p class="muted">Menunggu pembayaran terkonfirmasi… halaman ini berubah sendiri.</p>`;
+    } else if (d.status === 'dibayar') {
+      v.innerHTML = `<div class="antrian-besar">${d.nomor_antrian}</div><h2>✅ Pembayaran diterima!</h2>
+        <p>Pesananmu sudah masuk ke dapur. Tunggu nomor antrianmu jadi "Siap Diambil" ya.</p>`;
+    } else if (d.status === 'dimasak') {
+      v.innerHTML = `<div class="antrian-besar">${d.nomor_antrian}</div><h2>👨‍🍳 Sedang dimasak…</h2><p>Sabar ya, pesananmu sedang dibuat.</p>`;
+    } else if (d.status === 'siap') {
+      v.innerHTML = `<div class="siap"><p class="muted">Nomor antrian</p><div class="antrian-besar">${d.nomor_antrian}</div>
+        <h2>🔔 PESANAN SIAP DIAMBIL!</h2><p>Silakan ambil di area pick-up dan sebutkan nomor antrianmu.</p></div>`;
+    } else if (d.status === 'selesai') {
+      v.innerHTML = `<h2>🙏 Terima kasih!</h2><p>Pesanan selesai. Selamat menikmati!</p>
+        <button class="btn-besar" onclick="location.reload()">Pesan Lagi</button>`;
+      clearInterval(pollTimer);
+    } else if (d.status === 'batal') {
+      v.innerHTML = `<h2>Pesanan dibatalkan</h2><p class="muted">Silakan coba pesan ulang atau hubungi petugas.</p>
+        <button class="btn-besar" onclick="sessionStorage.removeItem('ok_order');location.reload()">Kembali ke Menu</button>`;
+      clearInterval(pollTimer);
+    }
+  };
+  const cek = async () => {
+    try {
+      const r = await fetch('/api/pesan?tenant=' + encodeURIComponent(TENANT) + '&order=' + encodeURIComponent(orderId));
+      const d = await r.json();
+      if (d.ok) gambarStatus(d);
+    } catch {}
+  };
+  clearInterval(pollTimer);
+  cek();
+  pollTimer = setInterval(cek, 4000);
+}
+
+// ---------- Sheet ----------
+function bukaSheet(id) { document.getElementById(id).style.display = 'block'; }
+function tutupSheet(id) { document.getElementById(id).style.display = 'none'; }
+document.querySelectorAll('[data-tutup]').forEach((b) => b.addEventListener('click', () => tutupSheet(b.dataset.tutup)));
+document.querySelectorAll('.sheet').forEach((s) => s.addEventListener('click', (e) => { if (e.target === s) s.style.display = 'none'; }));
+
+// Lanjutkan pelacakan bila halaman dimuat ulang
+(function () {
+  try {
+    const simpan = JSON.parse(sessionStorage.getItem('ok_order') || 'null');
+    if (simpan && simpan.tenant === TENANT && simpan.order_id) mulaiLacak(simpan.order_id, null);
+    else muatMenu();
+  } catch { muatMenu(); }
+})();
+</script>
+</body>
+</html>

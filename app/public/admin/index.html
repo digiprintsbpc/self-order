@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Order Kuliner</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #f6f4ef; color: #222; }
+  header { background: #22252b; color: #fff; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; }
+  header h1 { font-size: 17px; }
+  header button { background: #3a3d45; color: #eee; border: 0; border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+  nav { display: flex; gap: 8px; padding: 12px 16px 0; flex-wrap: wrap; }
+  nav button { border: 1px solid #ddd; background: #fff; padding: 8px 16px; border-radius: 999px; cursor: pointer; font-size: 14px; }
+  nav button.aktif { background: #b3231b; color: #fff; border-color: #b3231b; }
+  main { padding: 16px; max-width: 860px; margin: 0 auto; }
+  .kartu { background: #fff; border-radius: 14px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 12px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .angka { font-size: 24px; font-weight: 800; }
+  .lbl { color: #777; font-size: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid #eee; vertical-align: top; }
+  label { font-size: 12px; font-weight: 600; color: #555; display: block; margin: 10px 0 4px; }
+  input, textarea, select { width: 100%; border: 1px solid #ddd; border-radius: 9px; padding: 9px; font-size: 14px; font-family: inherit; }
+  .btn { background: #b3231b; color: #fff; border: 0; border-radius: 10px; padding: 10px 18px; font-weight: 700; cursor: pointer; }
+  .btn.kecil { padding: 5px 10px; font-size: 12px; border-radius: 8px; }
+  .btn.abu { background: #eee; color: #333; }
+  .btn.bahaya { background: #fdecec; color: #8f1d17; }
+  #login { max-width: 380px; margin: 50px auto; }
+  .tersembunyi { display: none; }
+  .qrmeja { display: flex; gap: 14px; align-items: center; }
+  .qrmeja img { width: 110px; height: 110px; }
+  .url { font-size: 12px; color: #555; word-break: break-all; }
+  #pesan { margin: 0 16px; }
+  .sukses { background: #e7f8ec; color: #146c2e; padding: 10px 14px; border-radius: 10px; font-size: 14px; }
+  .gagal { background: #fdecec; color: #8f1d17; padding: 10px 14px; border-radius: 10px; font-size: 14px; }
+</style>
+</head>
+<body>
+<div id="login" class="kartu">
+  <h2>Panel Pemilik Usaha</h2>
+  <label>SLUG USAHA</label>
+  <input type="text" id="inSlug" placeholder="cth: warung-demo">
+  <label>PIN</label>
+  <input type="password" id="inPin" placeholder="PIN usaha" inputmode="numeric">
+  <div id="loginErr" style="color:#8f1d17;font-size:13px;min-height:18px;margin-top:6px"></div>
+  <button class="btn" id="btnLogin" style="width:100%;margin-top:8px">Masuk</button>
+</div>
+
+<div id="app" class="tersembunyi">
+  <header>
+    <h1>⚙️ <span id="judulUsaha"></span></h1>
+    <button id="btnKeluar">Keluar</button>
+  </header>
+  <nav>
+    <button data-tab="ringkas" class="aktif">Ringkasan</button>
+    <button data-tab="menu">Menu</button>
+    <button data-tab="meja">Meja &amp; QR</button>
+    <button data-tab="atur">Pengaturan</button>
+  </nav>
+  <div id="pesan"></div>
+  <main>
+    <section id="tab-ringkas"></section>
+    <section id="tab-menu" class="tersembunyi"></section>
+    <section id="tab-meja" class="tersembunyi"></section>
+    <section id="tab-atur" class="tersembunyi"></section>
+  </main>
+</div>
+
+<script>
+let TENANT = localStorage.getItem('ok_admin_slug') || '';
+let PIN = localStorage.getItem('ok_admin_pin') || '';
+const rp = (n) => 'Rp ' + Number(n || 0).toLocaleString('id-ID');
+
+function info(msg, ok) {
+  document.getElementById('pesan').innerHTML = msg ? `<div class="${ok ? 'sukses' : 'gagal'}" style="margin-top:12px">${msg}</div>` : '';
+  if (msg) setTimeout(() => info(''), 4000);
+}
+
+async function apiGet(action) {
+  const r = await fetch(`/api/admin?tenant=${encodeURIComponent(TENANT)}&pin=${encodeURIComponent(PIN)}&action=${action}`);
+  const d = await r.json();
+  if (!d.ok) throw new Error(d.error || 'Gagal');
+  return d;
+}
+async function apiPost(body) {
+  const r = await fetch('/api/admin', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tenant: TENANT, pin: PIN, ...body }),
+  });
+  const d = await r.json();
+  if (!d.ok) throw new Error(d.error || 'Gagal');
+  return d;
+}
+
+// ---------- Ringkasan ----------
+async function tabRingkas() {
+  const d = await apiGet('ringkas');
+  document.getElementById('judulUsaha').textContent = d.tenant.nama;
+  const r = d.ringkas;
+  document.getElementById('tab-ringkas').innerHTML = `
+    <div class="grid">
+      <div class="kartu"><div class="angka">${rp(r.omzet)}</div><div class="lbl">Omzet hari ini</div></div>
+      <div class="kartu"><div class="angka">${r.order_lunas}</div><div class="lbl">Order terbayar hari ini</div></div>
+      <div class="kartu"><div class="angka">${r.menunggu_bayar}</div><div class="lbl">Menunggu pembayaran</div></div>
+      <div class="kartu"><div class="angka">${r.jumlah_menu} / ${r.jumlah_meja}</div><div class="lbl">Menu / Meja</div></div>
+    </div>
+    ${d.tenant.payinaja_terisi ? '' : '<div class="kartu gagal">⚠️ API key PayinAja belum diisi — pelanggan belum bisa membayar. Isi di tab Pengaturan.</div>'}
+    <div class="kartu">
+      <b>Tautan penting</b>
+      <p class="url">📱 Halaman pesan (pelanggan): ${location.origin}/pesan/?t=${TENANT}</p>
+      <p class="url">🍳 Layar dapur: ${location.origin}/dapur/?t=${TENANT}</p>
+    </div>`;
+}
+
+// ---------- Menu ----------
+let menuCache = [];
+async function tabMenu() {
+  const d = await apiGet('menu');
+  menuCache = d.menu;
+  const baris = menuCache.map((m) => `<tr>
+    <td><b>${m.nama}</b><br><span class="lbl">${m.kategori} · urutan ${m.urutan}</span></td>
+    <td>${rp(m.harga)}</td>
+    <td>${m.ada_level ? '🌶 ' : ''}${(m.ekstra || []).length ? '+' + m.ekstra.length + ' ekstra' : ''}</td>
+    <td>${m.tersedia ? '✅ Tersedia' : '🚫 Habis'}</td>
+    <td style="white-space:nowrap">
+      <button class="btn kecil abu" onclick="editMenu('${m.id}')">Edit</button>
+      <button class="btn kecil bahaya" onclick="hapusMenu('${m.id}')">Hapus</button>
+    </td></tr>`).join('');
+  document.getElementById('tab-menu').innerHTML = `
+    <div class="kartu">
+      <h3 id="judulFormMenu">Tambah Menu</h3>
+      <input type="hidden" id="mId">
+      <label>NAMA</label><input id="mNama" placeholder="cth: Mie Pedas">
+      <label>KATEGORI</label><input id="mKategori" placeholder="cth: Mie / Nasi / Minuman">
+      <label>HARGA (Rp)</label><input id="mHarga" type="number" min="0" placeholder="12000">
+      <label>DESKRIPSI</label><input id="mDeskripsi" placeholder="boleh kosong">
+      <label>URL FOTO</label><input id="mFoto" placeholder="https://… (boleh kosong)">
+      <label>EKSTRA — satu per baris, format: Nama=Harga</label>
+      <textarea id="mEkstra" rows="3" placeholder="Telur=3000&#10;Bakso=4000"></textarea>
+      <label>URUTAN TAMPIL</label><input id="mUrutan" type="number" value="0">
+      <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="mLevel" style="width:auto"> Ada pilihan level pedas (0–5)</label>
+      <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="mTersedia" style="width:auto" checked> Tersedia (tampil ke pelanggan)</label>
+      <div style="margin-top:12px;display:flex;gap:8px">
+        <button class="btn" onclick="simpanMenu()">Simpan Menu</button>
+        <button class="btn abu" onclick="resetFormMenu()">Batal / Baru</button>
+      </div>
+    </div>
+    <div class="kartu"><table><tr><th>Menu</th><th>Harga</th><th>Opsi</th><th>Status</th><th></th></tr>${baris || '<tr><td colspan="5">Belum ada menu.</td></tr>'}</table></div>`;
+}
+function resetFormMenu() {
+  ['mId','mNama','mKategori','mHarga','mDeskripsi','mFoto','mEkstra'].forEach((id) => document.getElementById(id).value = '');
+  document.getElementById('mUrutan').value = 0;
+  document.getElementById('mLevel').checked = false;
+  document.getElementById('mTersedia').checked = true;
+  document.getElementById('judulFormMenu').textContent = 'Tambah Menu';
+}
+function editMenu(id) {
+  const m = menuCache.find((x) => x.id === id);
+  if (!m) return;
+  document.getElementById('mId').value = m.id;
+  document.getElementById('mNama').value = m.nama;
+  document.getElementById('mKategori').value = m.kategori;
+  document.getElementById('mHarga').value = m.harga;
+  document.getElementById('mDeskripsi').value = m.deskripsi || '';
+  document.getElementById('mFoto').value = m.foto_url || '';
+  document.getElementById('mEkstra').value = (m.ekstra || []).map((e) => `${e.nama}=${e.harga}`).join('\n');
+  document.getElementById('mUrutan').value = m.urutan || 0;
+  document.getElementById('mLevel').checked = !!m.ada_level;
+  document.getElementById('mTersedia').checked = !!m.tersedia;
+  document.getElementById('judulFormMenu').textContent = 'Edit Menu: ' + m.nama;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+async function simpanMenu() {
+  const ekstra = document.getElementById('mEkstra').value.split('\n').map((s) => s.trim()).filter(Boolean).map((s) => {
+    const [nama, harga] = s.split('=');
+    return { nama: (nama || '').trim(), harga: parseInt(harga, 10) || 0 };
+  }).filter((e) => e.nama);
+  try {
+    await apiPost({
+      action: 'menu-save',
+      id: document.getElementById('mId').value || undefined,
+      nama: document.getElementById('mNama').value,
+      kategori: document.getElementById('mKategori').value,
+      harga: document.getElementById('mHarga').value,
+      deskripsi: document.getElementById('mDeskripsi').value,
+      foto_url: document.getElementById('mFoto').value || null,
+      ekstra,
+      urutan: document.getElementById('mUrutan').value,
+      ada_level: document.getElementById('mLevel').checked,
+      tersedia: document.getElementById('mTersedia').checked,
+    });
+    info('Menu tersimpan ✅', true);
+    tabMenu();
+  } catch (e) { info(e.message, false); }
+}
+async function hapusMenu(id) {
+  if (!confirm('Hapus menu ini?')) return;
+  try { await apiPost({ action: 'menu-delete', id }); info('Menu dihapus', true); tabMenu(); }
+  catch (e) { info(e.message, false); }
+}
+
+// ---------- Meja ----------
+async function tabMeja() {
+  const d = await apiGet('meja');
+  const kartu = d.meja.map((m) => {
+    const url = `${location.origin}/pesan/?t=${TENANT}&meja=${m.token}`;
+    const qr = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(url);
+    return `<div class="kartu"><div class="qrmeja">
+      <img src="${qr}" alt="QR Meja ${m.nomor}">
+      <div>
+        <b style="font-size:17px">Meja ${m.nomor}</b>
+        <p class="url">${url}</p>
+        <p style="margin-top:8px"><a href="${qr}" target="_blank" rel="noopener">Unduh QR untuk dicetak</a></p>
+        <button class="btn kecil bahaya" onclick="hapusMeja('${m.id}')">Hapus Meja</button>
+      </div></div></div>`;
+  }).join('');
+  document.getElementById('tab-meja').innerHTML = `
+    <div class="kartu">
+      <h3>Tambah Meja</h3>
+      <label>NOMOR / LABEL MEJA</label>
+      <div style="display:flex;gap:8px"><input id="mejaBaru" placeholder="cth: 4 atau A1"><button class="btn" onclick="tambahMeja()">Tambah</button></div>
+    </div>
+    ${kartu || '<div class="kartu">Belum ada meja.</div>'}`;
+}
+async function tambahMeja() {
+  try { await apiPost({ action: 'meja-add', nomor: document.getElementById('mejaBaru').value }); info('Meja ditambah ✅', true); tabMeja(); }
+  catch (e) { info(e.message, false); }
+}
+async function hapusMeja(id) {
+  if (!confirm('Hapus meja ini? QR lamanya tidak berlaku lagi.')) return;
+  try { await apiPost({ action: 'meja-delete', id }); info('Meja dihapus', true); tabMeja(); }
+  catch (e) { info(e.message, false); }
+}
+
+// ---------- Pengaturan ----------
+async function tabAtur() {
+  const d = await apiGet('ringkas');
+  document.getElementById('tab-atur').innerHTML = `
+    <div class="kartu">
+      <h3>Pengaturan Usaha</h3>
+      <label>NAMA USAHA</label><input id="aNama" value="${d.tenant.nama.replace(/"/g, '&quot;')}">
+      <label>API KEY PAYINAJA ${d.tenant.payinaja_terisi ? '(sudah terisi — isi hanya bila mau mengganti)' : '(BELUM diisi)'}</label>
+      <input id="aKey" type="password" placeholder="API key PayinAja milik usaha ini">
+      <label>PIN BARU (kosongkan bila tidak diganti)</label>
+      <input id="aPinBaru" type="password" placeholder="PIN baru">
+      <button class="btn" style="margin-top:14px" onclick="simpanAtur()">Simpan Pengaturan</button>
+      <p class="lbl" style="margin-top:10px">Uang pembayaran pelanggan masuk ke akun PayinAja yang API key-nya diisi di sini.</p>
+    </div>`;
+}
+async function simpanAtur() {
+  try {
+    await apiPost({
+      action: 'tenant-save',
+      nama: document.getElementById('aNama').value,
+      payinaja_api_key: document.getElementById('aKey').value,
+      pin_baru: document.getElementById('aPinBaru').value,
+    });
+    const pinBaru = document.getElementById('aPinBaru').value;
+    if (pinBaru) { PIN = pinBaru; localStorage.setItem('ok_admin_pin', PIN); }
+    info('Pengaturan tersimpan ✅', true);
+    tabAtur();
+  } catch (e) { info(e.message, false); }
+}
+
+// ---------- Navigasi & login ----------
+const muatTab = { ringkas: tabRingkas, menu: tabMenu, meja: tabMeja, atur: tabAtur };
+document.querySelectorAll('nav button').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('nav button').forEach((x) => x.classList.toggle('aktif', x === b));
+  document.querySelectorAll('main section').forEach((s) => s.classList.add('tersembunyi'));
+  document.getElementById('tab-' + b.dataset.tab).classList.remove('tersembunyi');
+  muatTab[b.dataset.tab]().catch((e) => info(e.message, false));
+}));
+
+async function masuk() {
+  try {
+    await apiGet('ringkas');
+    localStorage.setItem('ok_admin_slug', TENANT);
+    localStorage.setItem('ok_admin_pin', PIN);
+    document.getElementById('login').classList.add('tersembunyi');
+    document.getElementById('app').classList.remove('tersembunyi');
+    tabRingkas();
+  } catch (e) { throw e; }
+}
+document.getElementById('btnLogin').onclick = async () => {
+  TENANT = document.getElementById('inSlug').value.trim();
+  PIN = document.getElementById('inPin').value.trim();
+  document.getElementById('loginErr').textContent = '';
+  try { await masuk(); } catch (e) { document.getElementById('loginErr').textContent = e.message; }
+};
+document.getElementById('btnKeluar').onclick = () => {
+  localStorage.removeItem('ok_admin_pin'); PIN = '';
+  location.reload();
+};
+
+(async function () {
+  if (TENANT && PIN) {
+    document.getElementById('inSlug').value = TENANT;
+    try { await masuk(); } catch { /* tampilkan form login */ }
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1 @@
+{"description":"Sistem self-order untuk usaha kuliner (QR meja -> menu digital -> QRIS -> layar dapur).","engines":{"node":">=18"},"name":"order-kuliner","private":true,"version":"1.0.0"}

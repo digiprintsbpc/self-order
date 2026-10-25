@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Order Kuliner — Self-Order untuk Usaha Kuliner</title>
+<style>
+  body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #f6f4ef; color: #222; margin: 0; }
+  .bungkus { max-width: 640px; margin: 0 auto; padding: 40px 20px; }
+  h1 { font-size: 30px; }
+  h1 span { color: #b3231b; }
+  p { color: #555; line-height: 1.6; }
+  .langkah { background: #fff; border-radius: 14px; padding: 16px 18px; margin: 10px 0; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  .langkah b { display: block; margin-bottom: 3px; }
+  a.btn { display: inline-block; background: #b3231b; color: #fff; text-decoration: none; padding: 12px 20px; border-radius: 12px; font-weight: 700; margin: 6px 6px 0 0; }
+  a.btn.abu { background: #22252b; }
+</style>
+</head>
+<body>
+<div class="bungkus">
+  <h1>Order<span>Kuliner</span></h1>
+  <p>Sistem pesan mandiri untuk warung, kafe, dan kedai: pelanggan scan QR di meja, pesan dari HP, bayar QRIS di depan — pesanan langsung masuk layar dapur dan pelanggan tahu sendiri kapan pesanannya siap diambil. Tanpa antri kasir, tanpa alat khusus.</p>
+
+  <div class="langkah"><b>1. Scan QR di meja 📱</b>Setiap meja punya QR unik yang membuka menu digital usaha Anda.</div>
+  <div class="langkah"><b>2. Pesan &amp; bayar QRIS 💳</b>Pelanggan memilih menu, level pedas, dan tambahan — lalu membayar. Uang masuk ke akun pembayaran milik usaha Anda sendiri.</div>
+  <div class="langkah"><b>3. Dapur memproses 🍳</b>Pesanan tampil di layar dapur; staf memajukan status: dimasak → siap.</div>
+  <div class="langkah"><b>4. Pelanggan dipanggil 🔔</b>HP pelanggan berubah jadi “Siap Diambil” lengkap dengan bunyi &amp; getar, plus nomor antrian besar.</div>
+
+  <p style="margin-top:22px"><b>Coba demo (usaha contoh “Warung Demo”):</b></p>
+  <a class="btn" href="/pesan/?t=warung-demo&amp;meja=demo-meja-1">Pesan sebagai Pelanggan (Meja 1)</a>
+  <a class="btn abu" href="/dapur/?t=warung-demo">Layar Dapur (PIN 1234)</a>
+  <a class="btn abu" href="/admin/">Panel Pemilik (slug: warung-demo, PIN 1234)</a>
+</div>
+</body>
+</html>
